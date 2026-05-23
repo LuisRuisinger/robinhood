@@ -21,7 +21,7 @@ include(FetchContent)
 FetchContent_Declare(
         robinhood
         GIT_REPOSITORY git@github.com:LuisRuisinger/robinhood.git
-        GIT_TAG release/v0.1.0
+        GIT_TAG v0.1.0
 )
 
 FetchContent_MakeAvailable(robinhood)
