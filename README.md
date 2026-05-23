@@ -1,4 +1,4 @@
-# robinhood-map
+# Robinhood
 
 Header-only Robin Hood hashmap.
 
