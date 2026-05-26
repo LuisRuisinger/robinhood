@@ -14,6 +14,13 @@ add_library(lsr::robinhood ALIAS robinhood)
 
 include(GNUInstallDirs)
 
+target_sources(robinhood
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/robinhood/robinhood.h>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/robinhood/robinhood_map.hpp>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/robinhood/robinhood_set.hpp>
+)
+
 target_include_directories(robinhood
         INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

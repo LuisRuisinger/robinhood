@@ -335,6 +335,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
 // =================================================================================================
 
 #define ROBINHOOD_DECLARE_EX(name__, key_t__, val_t__, hash_expr__, eq_expr__)               \
+    typedef struct {                                                                         \
+    } name__##_void_t;                                                                       \
+                                                                                             \
     static inline u64 name__##_hash_key(const key_t__ *key__) { return (u64)(hash_expr__); } \
                                                                                              \
     static inline bool name__##_key_eq(const key_t__ *a__, const key_t__ *b__) {             \
@@ -384,6 +387,33 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
                              ROBINHOOD_DECLARE_3, ROBINHOOD_DECLARE_BAD_ARITY,      \
                              ROBINHOOD_DECLARE_BAD_ARITY)(__VA_ARGS__)
 
+#define ROBINHOOD_SET_DECLARE_EX(name__, key_t__, hash_expr__, eq_expr__) \
+    ROBINHOOD_DECLARE_EX(name__, key_t__, name__##_void_t, hash_expr__, eq_expr__)
+
+// default set declare
+#define ROBINHOOD_SET_DECLARE_2(name__, key_t__)                         \
+    ROBINHOOD_SET_DECLARE_EX(name__, key_t__, ROBINHOOD_HASH_PTR(key__), \
+                             ROBINHOOD_KEY_EQ_MEMCMP_PTR(a__, b__))
+
+// set declare with custom hash expr
+#define ROBINHOOD_SET_DECLARE_3(name__, key_t__, hash_expr__) \
+    ROBINHOOD_SET_DECLARE_EX(name__, key_t__, hash_expr__, ROBINHOOD_KEY_EQ_MEMCMP_PTR(a__, b__))
+
+// set declare with custom hash expr and equality expr
+#define ROBINHOOD_SET_DECLARE_4(name__, key_t__, hash_expr__, eq_expr__) \
+    ROBINHOOD_SET_DECLARE_EX(name__, key_t__, hash_expr__, eq_expr__)
+
+#define ROBINHOOD_SET_DECLARE_BAD_ARITY(...) \
+    ROBINHOOD_STATIC_ASSERT(0, "ROBINHOOD_SET_DECLARE supports 2, 3, or 4 arguments")
+
+#define ROBINHOOD_SET_DECLARE_SELECT(_1, _2, _3, _4, _5, NAME, ...) NAME
+
+#define ROBINHOOD_SET_DECLARE(...)                                                 \
+    ROBINHOOD_SET_DECLARE_SELECT(__VA_ARGS__, ROBINHOOD_SET_DECLARE_BAD_ARITY,     \
+                                 ROBINHOOD_SET_DECLARE_4, ROBINHOOD_SET_DECLARE_3, \
+                                 ROBINHOOD_SET_DECLARE_2,                          \
+                                 ROBINHOOD_SET_DECLARE_BAD_ARITY)(__VA_ARGS__)
+
 // =================================================================================================
 // Init
 // =================================================================================================
@@ -418,6 +448,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         memset((map__).metadata, 0, meta_size__);                                        \
     } while (0)
 
+#define ROBINHOOD_SET_INIT_EX(map__, cap__, alloc__, free__, ctx__) \
+    ROBINHOOD_INIT_EX(map__, cap__, alloc__, free__, ctx__)
+
 // default init
 #define ROBINHOOD_INIT_1(map__) \
     ROBINHOOD_INIT_EX((map__), ROBINHOOD_DEFAULT_CAPACITY, NULL, NULL, NULL)
@@ -443,6 +476,30 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
                           ROBINHOOD_INIT_BAD_ARITY, ROBINHOOD_INIT_2,      \
                           ROBINHOOD_INIT_1)(__VA_ARGS__)
 
+// default set init
+#define ROBINHOOD_SET_INIT_1(set__) ROBINHOOD_INIT_1(set__)
+
+// set init with capacity
+#define ROBINHOOD_SET_INIT_2(set__, cap__) ROBINHOOD_INIT_2(set__, cap__)
+
+// set init with capacity and explicit memory management
+#define ROBINHOOD_SET_INIT_4(set__, cap__, alloc__, free__) \
+    ROBINHOOD_INIT_4(set__, cap__, alloc__, free__)
+
+// set init with capacity and explicit memory management + context
+#define ROBINHOOD_SET_INIT_5(set__, cap__, alloc__, free__, ctx__) \
+    ROBINHOOD_INIT_5(set__, cap__, alloc__, free__, ctx__)
+
+#define ROBINHOOD_SET_INIT_BAD_ARITY(...) \
+    ROBINHOOD_STATIC_ASSERT(0, "ROBINHOOD_SET_INIT supports 1, 2, 4, or 5 arguments")
+
+#define ROBINHOOD_SET_INIT_SELECT(_1, _2, _3, _4, _5, NAME, ...) NAME
+
+#define ROBINHOOD_SET_INIT(...)                                                        \
+    ROBINHOOD_SET_INIT_SELECT(__VA_ARGS__, ROBINHOOD_SET_INIT_5, ROBINHOOD_SET_INIT_4, \
+                              ROBINHOOD_SET_INIT_BAD_ARITY, ROBINHOOD_SET_INIT_2,      \
+                              ROBINHOOD_SET_INIT_1)(__VA_ARGS__)
+
 // =================================================================================================
 // Destroy
 // =================================================================================================
@@ -463,6 +520,8 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         memset(&(map__), 0, sizeof(map__));                                              \
     } while (0)
 
+#define ROBINHOOD_SET_DESTROY(map__) ROBINHOOD_DESTROY(map__)
+
 // =================================================================================================
 // Robin Hood Insertion - raw
 // =================================================================================================
@@ -474,6 +533,8 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
             (map__).slots[(map__).cap + (idx__)] = (map__).slots[idx__];       \
         }                                                                      \
     } while (0)
+
+#define ROBINHOOD_SET_SYNC_MIRROR(map__, idx__) ROBINHOOD_SYNC_MIRROR(map__, idx__)
 
 #define ROBINHOOD_INSERT_NO_RESIZE(name__, map__, k__, v__, out__)                                \
     do {                                                                                          \
@@ -544,6 +605,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         *(out__) = (__typeof__(&(map__).slots[0]))inserted_addr__;                                \
     } while (0)
 
+#define ROBINHOOD_SET_INSERT_NO_RESIZE(name__, set__, k__, out__) \
+    ROBINHOOD_INSERT_NO_RESIZE(name__, set__, k__, ((name__##_void_t){}), out__)
+
 // =================================================================================================
 // Rehash
 // =================================================================================================
@@ -559,6 +623,8 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         ROBINHOOD_NEXT_POW2(wanted_cap__, wanted_cap__);                     \
         (ret__) = wanted_cap__;                                              \
     } while (0)
+
+#define ROBINHOOD_SET_CAP_FOR_LEN(len__, pct__, ret__) ROBINHOOD_CAP_FOR_LEN(len__, pct__, ret__)
 
 #define ROBINHOOD_REHASH(name__, map__, new_cap__)                                               \
     do {                                                                                         \
@@ -634,25 +700,35 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         }                                                                                        \
     } while (0)
 
+#define ROBINHOOD_SET_REHASH(name__, map__, new_cap__) ROBINHOOD_REHASH(name__, map__, new_cap__)
+
 // =================================================================================================
 // Grow
 // =================================================================================================
 
 #define ROBINHOOD_LOAD(map__) ((map__).len * 100 / (map__).cap)  // load factor
 
+#define ROBINHOOD_SET_LOAD(map__) ROBINHOOD_LOAD(map__)
+
 #define ROBINHOOD_GROW(name__, map__)                        \
     do {                                                     \
         ROBINHOOD_REHASH(name__, (map__), (map__).cap << 1); \
     } while (0)
 
+#define ROBINHOOD_SET_GROW(map__) ROBINHOOD_GROW(map__, (map__).len)
+
 #define ROBINHOOD_PSL_MAX_ALLOWED \
     ((1 << ROBINHOOD_PSL_PART_BIT_CNT) - 1)  // threshold until corruption
+
+#define ROBINHOOD_SET_MAX_PSL_ALLOWED ROBINHOOD_PSL_MAX_ALLOWED
 
 #define ROBINHOOD_MAYBE_GROW(name__, map__, pct__)                                            \
     do {                                                                                      \
         if (ROBINHOOD_LOAD(map__) >= (pct__) || (map__).max_psl >= ROBINHOOD_PSL_MAX_ALLOWED) \
             ROBINHOOD_GROW(name__, map__);                                                    \
     } while (0)
+
+#define ROBINHOOD_SET_MAYBE_GROW(name__, map__, pct__) ROBINHOOD_MAYBE_GROW(name__, map__, pct__)
 
 // =================================================================================================
 // Robin Hood Insertion
@@ -663,6 +739,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         ROBINHOOD_MAYBE_GROW(name__, map__, ROBINHOOD_LOAD_THRESHOLD); \
         ROBINHOOD_INSERT_NO_RESIZE(name__, map__, k__, v__, out__);    \
     } while (0)
+
+#define ROBINHOOD_SET_INSERT(name__, set__, k__, out__) \
+    ROBINHOOD_INSERT(name__, set__, k__, ((name__##_void_t){}), out__)
 
 // =================================================================================================
 // Lookup
@@ -699,6 +778,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
             cur_psl__++;                                                                          \
         }                                                                                         \
     } while (0)
+
+#define ROBINHOOD_SET_FIND_SCALAR(name__, map__, k__, out__, ret__) \
+    ROBINHOOD_FIND_SCALAR(name__, map__, k__, out__, ret__)
 
 #define ROBINHOOD_FIND_SIMD_128BIT(name__, map__, k__, out__, ret__)                             \
     do {                                                                                         \
@@ -762,6 +844,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
                                                                                                  \
         CONCAT(found_label__, __LINE__) :;                                                       \
     } while (0)
+
+#define ROBINHOOD_SET_FIND_SIMD_128BIT(name__, map__, k__, out__, ret__) \
+    ROBINHOOD_FIND_SIMD_128BIT(name__, map__, k__, out__, ret__)
 
 #define ROBINHOOD_FIND_SIMD_256BIT(name__, map__, k__, out__, ret__)                               \
     do {                                                                                           \
@@ -831,20 +916,40 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         CONCAT(found_label__, __LINE__) :;                                                         \
     } while (0)
 
+#define ROBINHOOD_SET_FIND_SIMD_256BIT(name__, map__, k__, out__, ret__) \
+    ROBINHOOD_FIND_SIMD_256BIT(name__, map__, k__, out__, ret__)
+
 #if (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86))
 #    if defined(__AVX2__) && defined(ROBINHOOD_ASSUME_LONG_PROBE_SEQUENCES)
 #        define ROBINHOOD_FIND(name__, map__, k__, out__, ret__) \
             ROBINHOOD_FIND_SIMD_256BIT(name__, map__, k__, out__, ret__)
+
+#        define ROBINHOOD_SET_FIND(name__, set__, k__, out__, ret__) \
+            ROBINHOOD_FIND_SIMD_256BIT(name__, set__, k__, out__, ret__)
+
 #    elif defined(__SSE2__)
 #        define ROBINHOOD_FIND(name__, map__, k__, out__, ret__) \
             ROBINHOOD_FIND_SIMD_128BIT(name__, map__, k__, out__, ret__)
+
+#        define ROBINHOOD_SET_FIND(name__, set__, k__, out__, ret__) \
+            ROBINHOOD_FIND_SIMD_128BIT(name__, set__, k__, out__, ret__)
+
 #    else
 #        define ROBINHOOD_FIND(name__, map__, k__, out__, ret__) \
             ROBINHOOD_FIND_SCALAR(name__, map__, k__, out__, ret__)
+
+#        define ROBINHOOD_SET_FIND(name__, set__, k__, out__, ret__) \
+            ROBINHOOD_FIND_SCALAR(name__, set__, k__, out__, ret__)
+
 #    endif
+
 #else
 #    define ROBINHOOD_FIND(name__, map__, k__, out__, ret__) \
         ROBINHOOD_FIND_SCALAR(name__, map__, k__, out__, ret__)
+
+#    define ROBINHOOD_SET_FIND(name__, set__, k__, out__, ret__) \
+        ROBINHOOD_FIND_SCALAR(name__, set__, k__, out__, ret__)
+
 #endif
 
 // =================================================================================================
@@ -910,6 +1015,8 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         }                                                                                     \
     } while (0)
 
+#define ROBINHOOD_SET_DELETE(name__, map__, k__, ret__) ROBINHOOD_DELETE(name__, map__, k__, ret__)
+
 // =================================================================================================
 // Misc
 // =================================================================================================
@@ -920,6 +1027,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         ROBINHOOD_FIND(name__, map__, k__, &out__, ret__); \
     } while (0)
 
+#define ROBINHOOD_SET_CONTAINS(name__, map__, k__, ret__) \
+    ROBINHOOD_CONTAINS(name__, map__, k__, ret__)
+
 #define ROBINHOOD_RESERVE(name__, map__, expected_len__)                                  \
     do {                                                                                  \
         usize reserve_cap__;                                                              \
@@ -929,6 +1039,9 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
             ROBINHOOD_REHASH(name__, (map__), reserve_cap__);                             \
     } while (0)
 
+#define ROBINHOOD_SET_RESERVE(name__, map__, expected_len__) \
+    ROBINHOOD_RESERVE(name__, map__, expected_len__)
+
 #define ROBINHOOD_SHRINK_TO_FIT(name__, map__)                                      \
     do {                                                                            \
         usize shrink_cap__;                                                         \
@@ -937,5 +1050,7 @@ static inline u64 robinhood_hash_auto_ptr(const T *key) {
         if (shrink_cap__ < (map__).cap)                                             \
             ROBINHOOD_REHASH(name__, (map__), shrink_cap__);                        \
     } while (0)
+
+#define ROBINHOOD_SET_SHRINK_TO_FIT(name__, map__) ROBINHOOD_SHRINK_TO_FIT(name__, map__)
 
 #endif  // LRUISINGER_ROBINHOOD_INCLUDE_ROBINHOOD_ROBINHOOD_H_
